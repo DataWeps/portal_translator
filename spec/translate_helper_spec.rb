@@ -218,7 +218,7 @@ describe PortalTranslator do
               )
           settings = { keep_exit_url: true }
           PortalTranslator.translate_exit_link(redis, @test_array, settings)
-          PortalTranslator.translate_exit_link(redis, @test_array_no_exit,)
+          PortalTranslator.translate_exit_link(redis, @test_array_no_exit)
         end
 
         it 'url should be cokoliv.cz' do
