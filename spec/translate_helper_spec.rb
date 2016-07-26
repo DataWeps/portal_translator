@@ -26,7 +26,7 @@ describe PortalTranslator do
               'portal' => 'heureka.cz',
             }
           ]
-          PortalTranslator.translate_exit_link(redis, @test_array)
+          PortalTranslator.translate(redis, @test_array, {follow_url: true})
         end
 
         it 'should be translated' do
@@ -54,7 +54,7 @@ describe PortalTranslator do
                   :body => '',
                   :headers => { 'Location' => 'http://cokoliv.cz' }
               )
-          PortalTranslator.translate_exit_link(redis, @test_array)
+          PortalTranslator.translate(redis, @test_array, {follow_url: true})
         end
 
         it 'url should be cokoliv.cz' do
@@ -90,7 +90,7 @@ describe PortalTranslator do
               'portal' => 'zbozi.cz',
             }
           ]
-          PortalTranslator.translate_exit_link(redis, @test_array)
+          PortalTranslator.translate(redis, @test_array, {follow_url: true})
         end
 
         it 'should be translated' do
@@ -113,7 +113,7 @@ describe PortalTranslator do
               'shop'   => 'totalni hovadina',
               'portal' => 'zbozi.cz',
               'url'    => 'http://zbozi.cz' }]
-          PortalTranslator.translate_exit_link(redis, @test_array)
+          PortalTranslator.translate(redis, @test_array, {follow_url: true})
         end
 
         it 'url should be uplnejinecokoliv.cz' do
@@ -146,7 +146,7 @@ describe PortalTranslator do
                   'shop'   => 'Zle Krowky',
                   'portal' => 'pricemania-sk',
                   'url'    => 'http://pricemania.sk' }]
-          PortalTranslator.translate_exit_link(redis, @test_array)
+          PortalTranslator.translate(redis, @test_array, {follow_url: true})
         end
 
         it 'url should be zlyobchod.pl' do
@@ -176,7 +176,7 @@ describe PortalTranslator do
                   'shop'   => 'Dobre Krowky',
                   'portal' => 'pricemania-sk',
                   'url'    => 'http://pricemania.sk' }]
-          PortalTranslator.translate_exit_link(redis, @test_array)
+          PortalTranslator.translate(redis, @test_array, {follow_url: true})
         end
 
         it 'url should be dobryobchod.pl' do
@@ -216,9 +216,9 @@ describe PortalTranslator do
                   :body => '',
                   :headers => { 'Location' => 'http://cokoliv.cz' }
               )
-          settings = { keep_exit_url: true }
-          PortalTranslator.translate_exit_link(redis, @test_array, settings)
-          PortalTranslator.translate_exit_link(redis, @test_array_no_exit)
+          settings = { keep_exit_url: true, follow_url: true }
+          PortalTranslator.translate(redis, @test_array, settings)
+          PortalTranslator.translate(redis, @test_array_no_exit, {follow_url: true})
         end
 
         it 'url should be cokoliv.cz' do
@@ -270,13 +270,45 @@ describe PortalTranslator do
                   :body => '',
                   :headers => { 'Location' => 'http://cokoliv.cz' }
               )
-          settings = { portal: 'heureka.cz' }
-          PortalTranslator.translate_exit_link(redis, @test_array, settings)
+          settings = { portal: 'heureka.cz', follow_url: true }
+          PortalTranslator.translate(redis, @test_array, settings)
 
         end
 
         it 'url should be cokoliv.cz' do
           expect(@test_array[0]['url']).to eq(@stubbed_url)
+        end
+
+        it 'shop should be cokoliv.cz' do
+          expect(@test_array[0]['shop']).to eq('cokoliv.cz')
+        end
+
+        it 'totalni hovadina should be translated as cokoliv.cz' do
+          expect(
+              PortalTranslator.name_original_to_translated(
+                  redis, 'totalni hovadina', 'heureka.cz')).to eq('cokoliv.cz')
+        end
+
+        it 'shop should not have exit_url' do
+          expect(@test_array[0]['exit_url']).to be_nil
+        end
+      end
+
+      context 'follow_url' do
+        before :context do
+          @url = 'http://heureka.cz'
+          @test_array = [
+              {
+                  'shop'   => 'totalni hovadina',
+                  'portal'   => 'heureka.cz',
+                  'url'    => 'http://heureka.cz' }]
+
+          settings = { follow_url: false }
+          PortalTranslator.translate(redis, @test_array, settings)
+        end
+
+        it 'url should be cokoliv.cz' do
+          expect(@test_array[0]['url']).to eq(@url)
         end
 
         it 'shop should be cokoliv.cz' do

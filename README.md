@@ -31,6 +31,7 @@ translate_exit_link(redis, test_array)
 ```ruby
 {
     keep_exit_url: true, # Keeps also original url link
+    follow_url: true, # Translates portal exit link to real link to product
     connect: { # Proxy parameters for Typhoeus
         proxy: "proxy.weps.cz:10000", 
         followlocation: true 

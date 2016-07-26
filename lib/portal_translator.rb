@@ -50,15 +50,17 @@ module PortalTranslator
     end
 
     # request_parameters
-    def translate_exit_link(redis, shops, settings = {})
+    def translate(redis, shops, settings = {})
       max_concurrency = settings[:max_concurrency] ||=
                           PortalTranslatorHelpers::MAX_CONCURRENCY
       hydra = Typhoeus::Hydra.new(max_concurrency: max_concurrency)
       shops.each_with_index do |item, counter|
+
         next unless item['url'] # should not happen
         PortalTranslatorHelpers.complete_item(item, settings)
         redis_data = PortalTranslatorHelpers.fill_redis_data(item, redis)
-        next if PortalTranslatorHelpers.shop_uri_ok?(
+        # next if PortalTranslatorHelpers.shop_uri_ok?(
+        next if !settings[:follow_url] || PortalTranslatorHelpers.shop_uri_ok?(
           shops[counter], redis_data[:target]
         )
         hydra.queue(request(item, redis_data, settings))

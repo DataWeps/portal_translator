@@ -15,8 +15,9 @@ module PortalTranslatorHelpers
       shop_converter: 'shop_converter::zbozi',
       shop_converter_opposite: 'shop_converter::opposite::zbozi'
     },
-    'pricemania-sk' => {
-      exit_key: 'PricemaniaSk::Exit'
+    'pricemania.sk' => {
+      exit_key: 'PricemaniaSk::Exit',
+      shop_converter: 'shop_converter::pricemania-sk'
     }
   }.freeze
 
@@ -111,8 +112,13 @@ module PortalTranslatorHelpers
     end
 
     def hack_pricemania(complete)
-      xpath_url = Nokogiri::HTML(complete.body).at_xpath('//a/@href')
-      xpath_url ? clean_url(xpath_url.content) : nil
+      xpath_url = Nokogiri::HTML(complete.body)
+                          .at_xpath('//a[@class="clickthrough"]/@href')
+      return nil unless xpath_url
+      if xpath_url.content =~ /clk.tradedoubler.com.*url\((http.*)\)/
+        return clean_url(Regexp.last_match(1))
+      end
+      clean_url(xpath_url.content)
     end
 
     def shop_name_with_portal?(shop, shop_name)
