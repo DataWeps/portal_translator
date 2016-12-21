@@ -144,7 +144,7 @@ describe PortalTranslator do
           @test_array = [
               {
                   'shop'   => 'Zle Krowky',
-                  'portal' => 'pricemania-sk',
+                  'portal' => 'pricemania.sk',
                   'url'    => 'http://pricemania.sk' }]
           PortalTranslator.translate(redis, @test_array, {follow_url: true})
         end
@@ -174,7 +174,7 @@ describe PortalTranslator do
           @test_array = [
               {
                   'shop'   => 'Dobre Krowky',
-                  'portal' => 'pricemania-sk',
+                  'portal' => 'pricemania.sk',
                   'url'    => 'http://pricemania.sk' }]
           PortalTranslator.translate(redis, @test_array, {follow_url: true})
         end
@@ -327,6 +327,11 @@ describe PortalTranslator do
       end
     end
   end
+
+  context 'portal translator helper' do
+    it 'should has parse uri' do
+      expect(PortalTranslator::PortalTranslatorHelper.uri_parse(
+        'http://zbozi.cz').class).to be(URI::HTTP)
+    end
+  end
 end
-
-

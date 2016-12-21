@@ -2,15 +2,16 @@ require 'redis'
 require 'typhoeus'
 require 'uri'
 require 'nokogiri'
-require 'helpers/portal_translator_helpers'
+require 'helpers/portal_translator_helper'
 
 module PortalTranslator
+  include PortalTranslatorHelper
   class << self
     # translate heureka shop to real host name
     # mall-cz => mall.cz
     def name_original_to_translated(redis, original_shop, portal)
       real_shop = redis.hget(
-        PortalTranslatorHelpers::KEYS[portal][:shop_converter],
+        PortalTranslatorHelper::KEYS[portal][:shop_converter],
         original_shop
       )
       save_translated_to_original(
@@ -26,7 +27,7 @@ module PortalTranslator
     # mall.cz => mall-cz
     def name_translated_to_original(redis, name, portal)
       redis.hget(
-        PortalTranslatorHelpers::KEYS[portal][:shop_converter_opposite],
+        PortalTranslatorHelper::KEYS[portal][:shop_converter_opposite],
         name
       )
     end
@@ -34,7 +35,7 @@ module PortalTranslator
     def save_translated_to_original(redis:, translated_shop:,
                                     original_shop:, portal:)
       redis.hset(
-        PortalTranslatorHelpers::KEYS[portal][:shop_converter_opposite],
+        PortalTranslatorHelper::KEYS[portal][:shop_converter_opposite],
         translated_shop,
         original_shop
       )
@@ -43,7 +44,7 @@ module PortalTranslator
     def save_original_to_translated(redis:, translated_shop:,
                                     original_shop:, portal:)
       redis.hset(
-        PortalTranslatorHelpers::KEYS[portal][:shop_converter],
+        PortalTranslatorHelper::KEYS[portal][:shop_converter],
         original_shop,
         translated_shop
       ) unless original_shop =~ /heureka|zbozi\.cz/i
@@ -52,15 +53,15 @@ module PortalTranslator
     # request_parameters
     def translate(redis, shops, settings = {})
       max_concurrency = settings[:max_concurrency] ||=
-                          PortalTranslatorHelpers::MAX_CONCURRENCY
+                          PortalTranslatorHelper::MAX_CONCURRENCY
       hydra = Typhoeus::Hydra.new(max_concurrency: max_concurrency)
       shops.each_with_index do |item, counter|
 
         next unless item['url'] # should not happen
-        PortalTranslatorHelpers.complete_item(item, settings)
-        redis_data = PortalTranslatorHelpers.fill_redis_data(item, redis)
-        # next if PortalTranslatorHelpers.shop_uri_ok?(
-        next if !settings[:follow_url] || PortalTranslatorHelpers.shop_uri_ok?(
+        PortalTranslatorHelper.complete_item(item, settings)
+        redis_data = PortalTranslatorHelper.fill_redis_data(item, redis)
+        # next if PortalTranslatorHelper.shop_uri_ok?(
+        next if !settings[:follow_url] || PortalTranslatorHelper.shop_uri_ok?(
           shops[counter], redis_data[:target]
         )
         hydra.queue(request(item, redis_data, settings))
@@ -72,14 +73,14 @@ module PortalTranslator
   private
 
     def request(item, redis_data, request_parameters)
-      request = PortalTranslatorHelpers.create_request(item, request_parameters)
+      request = PortalTranslatorHelper.create_request(item, request_parameters)
       request.on_complete do |complete|
-        url = PortalTranslatorHelpers.find_url(complete, item)
+        url = PortalTranslatorHelper.find_url(complete, item)
         regex = /pricemania/
         if item['portal'] =~ regex && url =~ regex
-          url = PortalTranslatorHelpers.hack_pricemania(complete)
+          url = PortalTranslatorHelper.hack_pricemania(complete)
         end
-        PortalTranslatorHelpers.save_translated_link_to_redis(
+        PortalTranslatorHelper.save_translated_link_to_redis(
           redis_data[:redis],
           redis_data[:exit_key],
           redis_data[:key],
@@ -92,10 +93,10 @@ module PortalTranslator
 
     def save_shops_to_redis(redis, shops)
       shops.each do |shop|
-        shop_name = PortalTranslatorHelpers.get_host_without_www(shop['url'])
+        shop_name = PortalTranslatorHelper.get_host_without_www(shop['url'])
         shop['original_shop'] = shop['shop'] if shop['shop']
         shop['shop'] =
-          if PortalTranslatorHelpers.shop_name_with_portal?(shop, shop_name)
+          if PortalTranslatorHelper.shop_name_with_portal?(shop, shop_name)
             name_original_to_translated(
               redis,
               shop['shop'],
